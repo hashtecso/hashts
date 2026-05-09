@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" sizes="64x64" href="HTS.png">
-    
+    <link rel="icon" sizes="64x64" href="HTS.png">    
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0056b3">
     <link rel="apple-touch-icon" href="HTS.png">
@@ -99,6 +98,8 @@
         .btn-save:hover { background-color: #218838; }
         .btn-home { background-color: #6c757d; }
         .btn-danger { background-color: #dc3545; padding: 5px 10px; }
+        .btn-print { background-color: #17a2b8; } /* Color para el botón imprimir */
+        .btn-print:hover { background-color: #138496; }
 
         .logo {
             max-width: 100px;
@@ -221,6 +222,17 @@
         .pdf-mode .table-responsive { overflow: visible !important; border: none !important; }
         .pdf-mode table { min-width: 100% !important; }
         .pdf-mode .payment-info { background: transparent; padding: 0; } 
+
+        @media print {
+            body { padding: 0; background-color: white; }
+            .container { border: none; box-shadow: none; padding: 0; }
+            .controls, .btn-danger, #selector-screen, .modal { display: none !important; }
+            input, select { border: none; background: transparent; appearance: none; -webkit-appearance: none; padding: 0; }
+            .editable-number, .editable-status, .editable-text { border: none; width: auto; cursor: default; }
+            .payment-info { display: flex !important; background: transparent; padding: 0; } 
+            .table-responsive { border: none; overflow: visible; }
+            table { min-width: auto; }
+        }
     </style>
 </head>
 <body>
@@ -243,10 +255,11 @@
             <button type="button" class="btn-home" onclick="showSelectorScreen()">🏠 Inicio</button>
             <button type="button" id="convertBtn" onclick="convertToInvoice()">Convertir a Factura</button>
             <button type="button" class="btn-save" onclick="saveQuotation()">💾 Guardar</button>
-            <button type="button" class="btn-load" onclick="showLoadModal()">📂 Ver Guardados</button>
             <button type="button" onclick="addRow('', 1, 0)">+ Agregar Artículo</button>
             
-            <button type="button" onclick="descargarPDF()">📤 Compartir / PDF</button>
+            <button type="button" class="btn-print" onclick="window.print()">🖨️ Imprimir (PC)</button>
+
+            <button type="button" onclick="descargarPDF()">📥 Descargar PDF</button>
         </div>
 
         <div class="header">
@@ -585,7 +598,7 @@
         window.onclick = function(event) { if (event.target == document.getElementById('loadModal')) { closeModal(); } }
 
         // =========================================================
-        // FUNCIÓN MEJORADA: COMPARTIR PDF PARA APPCREATOR24
+        // FUNCIÓN MEJORADA: DESCARGA LIGERA PARA MÓVILES
         // =========================================================
         function descargarPDF() {
             // Ponemos el modo PDF para ocultar los botones de la "foto"
@@ -594,58 +607,23 @@
             const numeroDoc = document.getElementById('docNumber').value.replace('/', '-');
             const nombreArchivo = numeroDoc + '.pdf';
 
-            // Redujimos el "scale" a 1.2 para que consuma menos memoria RAM y no cierre la App
+            // Resolución mínima (scale: 1) para que AppCreator24 no agote la memoria y cierre la app
             const opcionesPDF = {
-                margin:       [0.5, 0.5, 0.5, 0.5],
+                margin:       0.5,
                 filename:     nombreArchivo,
-                image:        { type: 'jpeg', quality: 0.95 },
-                html2canvas:  { scale: 1.2, useCORS: true }, 
+                image:        { type: 'jpeg', quality: 0.85 },
+                html2canvas:  { scale: 1, useCORS: true }, 
                 jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
 
-            // Creamos el PDF de forma interna (Blob)
-            html2pdf().set(opcionesPDF).from(elementoParaPDF).output('blob').then(function(pdfBlob) {
-                // Restauramos la vista
+            // Ejecuta el guardado directo de la librería
+            html2pdf().set(opcionesPDF).from(elementoParaPDF).save().then(function() {
                 document.body.classList.remove('pdf-mode');
-                
-                // Creamos el archivo
-                const file = new File([pdfBlob], nombreArchivo, { type: 'application/pdf' });
-
-                // INVOCAMOS EL MENÚ DE COMPARTIR DE ANDROID
-                if (navigator.share) {
-                    navigator.share({
-                        files: [file],
-                        title: nombreArchivo,
-                        text: 'Aquí tienes tu documento: ' + nombreArchivo
-                    }).catch(function(error) {
-                        console.log('Compartir cancelado o no compatible', error);
-                        descargaAlternativa(pdfBlob, nombreArchivo);
-                    });
-                } else {
-                    descargaAlternativa(pdfBlob, nombreArchivo);
-                }
             }).catch(function(error) {
                 console.error("Error generando PDF: ", error);
                 document.body.classList.remove('pdf-mode');
-                alert("Hubo un error al generar el archivo. Intenta cerrar otras apps para liberar memoria.");
+                alert("Error de memoria en el celular. Intenta usar el botón 'Imprimir (PC)' que en móviles Android también permite guardar como PDF nativamente.");
             });
-        }
-
-        // Descarga tradicional (por si el celular no soporta Web Share)
-        function descargaAlternativa(blob, filename) {
-            try {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            } catch (e) {
-                alert("Tu aplicación no permite descargas directas. Usa la opción de compartir si está disponible.");
-            }
         }
 
         window.onload = function() {
