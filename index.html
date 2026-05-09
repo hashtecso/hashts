@@ -241,7 +241,7 @@
             <button type="button" class="btn-load" onclick="showLoadModal()">📂 Ver Guardados</button>
             <button type="button" onclick="addRow('', 1, 0)">+ Agregar Artículo</button>
             
-            <button type="button" onclick="descargarPDF()">📥 Descargar PDF</button>
+            <button type="button" onclick="descargarPDF()">📤 Compartir / PDF</button>
         </div>
 
         <div class="header">
@@ -580,37 +580,67 @@
         window.onclick = function(event) { if (event.target == document.getElementById('loadModal')) { closeModal(); } }
 
         // =========================================================
-        // FUNCIÓN PARA GENERAR Y DESCARGAR PDF EN MOVILES
+        // FUNCIÓN MEJORADA: COMPARTIR PDF PARA APPCREATOR24
         // =========================================================
         function descargarPDF() {
-            // 1. Añadimos la clase 'pdf-mode' para ocultar botones y quitar bordes de los inputs
+            // Ponemos el modo PDF para ocultar los botones de la "foto"
             document.body.classList.add('pdf-mode');
-            
-            // 2. Seleccionamos el contenedor que queremos convertir a PDF
             const elementoParaPDF = document.getElementById('main-app');
-            
-            // 3. Tomamos el número de documento para nombrar el archivo (reemplazando / por -)
             const numeroDoc = document.getElementById('docNumber').value.replace('/', '-');
             const nombreArchivo = numeroDoc + '.pdf';
 
-            // 4. Configuramos la librería
+            // Redujimos el "scale" a 1.2 para que consuma menos memoria RAM y no cierre la App
             const opcionesPDF = {
-                margin:       [0.5, 0.5, 0.5, 0.5], // Márgenes [arriba, izquierda, abajo, derecha] en pulgadas
+                margin:       [0.5, 0.5, 0.5, 0.5],
                 filename:     nombreArchivo,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true }, // scale: 2 mejora la resolución
+                image:        { type: 'jpeg', quality: 0.95 },
+                html2canvas:  { scale: 1.2, useCORS: true }, 
                 jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
 
-            // 5. Generamos el PDF
-            html2pdf().set(opcionesPDF).from(elementoParaPDF).save().then(function() {
-                // 6. Al terminar, quitamos la clase para que todo vuelva a la normalidad
+            // Creamos el PDF de forma interna (Blob)
+            html2pdf().set(opcionesPDF).from(elementoParaPDF).output('blob').then(function(pdfBlob) {
+                // Restauramos la vista
                 document.body.classList.remove('pdf-mode');
+                
+                // Creamos el archivo
+                const file = new File([pdfBlob], nombreArchivo, { type: 'application/pdf' });
+
+                // INVOCAMOS EL MENÚ DE COMPARTIR DE ANDROID
+                if (navigator.share) {
+                    navigator.share({
+                        files: [file],
+                        title: nombreArchivo,
+                        text: 'Aquí tienes tu documento: ' + nombreArchivo
+                    }).catch(function(error) {
+                        console.log('Compartir cancelado o no compatible', error);
+                        descargaAlternativa(pdfBlob, nombreArchivo);
+                    });
+                } else {
+                    descargaAlternativa(pdfBlob, nombreArchivo);
+                }
             }).catch(function(error) {
                 console.error("Error generando PDF: ", error);
                 document.body.classList.remove('pdf-mode');
-                alert("Hubo un error al generar el PDF. Revisa tu conexión a internet.");
+                alert("Hubo un error al generar el archivo. Intenta cerrar otras apps para liberar memoria.");
             });
+        }
+
+        // Descarga tradicional (por si el celular no soporta Web Share)
+        function descargaAlternativa(blob, filename) {
+            try {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (e) {
+                alert("Tu aplicación no permite descargas directas. Usa la opción de compartir si está disponible.");
+            }
         }
 
         window.onload = function() {
