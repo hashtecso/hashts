@@ -3,13 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" sizes="64x64" href="HTS.png">
-    
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0056b3">
-    <link rel="apple-touch-icon" href="HTS.png">
-    
     <title>Hash Tec Solutions - Facturación</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
         body { 
@@ -55,7 +51,7 @@
             border: none;
             color: white;
             background-color: #0056b3;
-            flex: 1 1 200px; /* Para que se adapten en móvil */
+            flex: 1 1 200px;
         }
         .opt-btn:hover { transform: scale(1.05); }
         .btn-load { background-color: #17a2b8; }
@@ -154,7 +150,7 @@
         table { 
             width: 100%;
             border-collapse: collapse; 
-            min-width: 600px; /* Evita que las columnas se aplasten */
+            min-width: 600px; 
         }
         th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
         th { background-color: #0e30ee; color: white; }
@@ -201,60 +197,25 @@
            ADAPTACIÓN PARA MÓVILES (CSS MEDIA QUERIES)
            ========================================================= */
         @media screen and (max-width: 650px) {
-            body {
-                padding: 10px;
-            }
-            .container {
-                padding: 15px; /* Menos padding en móviles */
-            }
-            .header {
-                flex-direction: column; /* Apila los elementos verticalmente */
-                align-items: center;
-                text-align: center;
-            }
-            .company-info {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                margin-bottom: 20px;
-                border-bottom: 1px solid #eee;
-                padding-bottom: 15px;
-                width: 100%;
-            }
-            .doc-info {
-                text-align: center;
-                width: 100%;
-            }
-            .editable-number, .editable-status {
-                text-align: center;
-            }
-            .controls button {
-                flex: 1 1 45%; /* Los botones ocupan la mitad del ancho */
-            }
-            .saved-doc-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .saved-doc-actions {
-                width: 100%;
-                justify-content: space-between;
-            }
-            .saved-doc-actions button {
-                flex: 1;
-            }
+            body { padding: 10px; }
+            .container, .selector-container { padding: 15px; }
+            .header { flex-direction: column; align-items: center; text-align: center; }
+            .company-info { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; width: 100%; }
+            .doc-info { text-align: center; width: 100%; }
+            .editable-number, .editable-status { text-align: center; }
+            .controls button { flex: 1 1 45%; }
+            .saved-doc-item { flex-direction: column; align-items: flex-start; }
+            .saved-doc-actions { width: 100%; justify-content: space-between; }
+            .saved-doc-actions button { flex: 1; }
         }
 
-        /* --- Estilos para Impresión --- */
-        @media print {
-            body { padding: 0; background-color: white; }
-            .container { border: none; box-shadow: none; padding: 0; }
-            .controls, .btn-danger, #selector-screen, .modal { display: none !important; }
-            input, select { border: none; background: transparent; appearance: none; -webkit-appearance: none; padding: 0; }
-            .editable-number, .editable-status, .editable-text { border: none; width: auto; cursor: default; }
-            .payment-info { display: flex !important; background: transparent; padding: 0; } 
-            .table-responsive { border: none; overflow: visible; }
-            table { min-width: auto; }
-        }
+        /* --- CLASES PARA GENERAR EL PDF SIN BOTONES NI BORDES --- */
+        .pdf-mode .controls, .pdf-mode .btn-danger { display: none !important; }
+        .pdf-mode input, .pdf-mode select { border: none !important; background: transparent !important; appearance: none; -webkit-appearance: none; padding: 0; color: #333; }
+        .pdf-mode .editable-number, .pdf-mode .editable-status, .pdf-mode .editable-text { border: none !important; width: auto !important; cursor: default; }
+        .pdf-mode .table-responsive { overflow: visible !important; border: none !important; }
+        .pdf-mode table { min-width: 100% !important; }
+        .pdf-mode .payment-info { background: transparent; padding: 0; } 
     </style>
 </head>
 <body>
@@ -279,17 +240,18 @@
             <button type="button" class="btn-save" onclick="saveQuotation()">💾 Guardar</button>
             <button type="button" class="btn-load" onclick="showLoadModal()">📂 Ver Guardados</button>
             <button type="button" onclick="addRow('', 1, 0)">+ Agregar Artículo</button>
-            <button type="button" onclick="window.print()">🖨️ Imprimir</button>
+            
+            <button type="button" onclick="descargarPDF()">📥 Descargar PDF</button>
         </div>
 
         <div class="header">
             <div class="company-info">
                 <img src="HTS.png" alt="Logo" class="logo">
                 <h2>Hash Tec Solutions</h2>
-                <p>Panamá [cite: 4, 19]</p>
-                <p>RUC/Cédula: 8-812-1161 [cite: 6, 21]</p>
-                <p>Tel: 62693224 [cite: 7, 22]</p>
-                <p>Email: hashtecsolutions@gmail.com [cite: 8, 23]</p>
+                <p>Panamá</p>
+                <p>RUC/Cédula: 8-812-1161</p>
+                <p>Tel: 62693224</p>
+                <p>Email: hashtecsolutions@gmail.com</p>
             </div>
             <div class="doc-info">
                 <h1 id="docTypeTitle">Cotización</h1>
@@ -618,21 +580,39 @@
         window.onclick = function(event) { if (event.target == document.getElementById('loadModal')) { closeModal(); } }
 
         // =========================================================
-        // REGISTRO DE SERVICE WORKER PARA LA PWA
+        // FUNCIÓN PARA GENERAR Y DESCARGAR PDF EN MOVILES
         // =========================================================
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('./sw.js').then(function(registration) {
-                    console.log('PWA Lista');
-                }, function(err) {
-                    console.log('Error PWA: ', err);
-                });
+        function descargarPDF() {
+            // 1. Añadimos la clase 'pdf-mode' para ocultar botones y quitar bordes de los inputs
+            document.body.classList.add('pdf-mode');
+            
+            // 2. Seleccionamos el contenedor que queremos convertir a PDF
+            const elementoParaPDF = document.getElementById('main-app');
+            
+            // 3. Tomamos el número de documento para nombrar el archivo (reemplazando / por -)
+            const numeroDoc = document.getElementById('docNumber').value.replace('/', '-');
+            const nombreArchivo = numeroDoc + '.pdf';
+
+            // 4. Configuramos la librería
+            const opcionesPDF = {
+                margin:       [0.5, 0.5, 0.5, 0.5], // Márgenes [arriba, izquierda, abajo, derecha] en pulgadas
+                filename:     nombreArchivo,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true }, // scale: 2 mejora la resolución
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            // 5. Generamos el PDF
+            html2pdf().set(opcionesPDF).from(elementoParaPDF).save().then(function() {
+                // 6. Al terminar, quitamos la clase para que todo vuelva a la normalidad
+                document.body.classList.remove('pdf-mode');
+            }).catch(function(error) {
+                console.error("Error generando PDF: ", error);
+                document.body.classList.remove('pdf-mode');
+                alert("Hubo un error al generar el PDF. Revisa tu conexión a internet.");
             });
         }
 
-        // =========================================================
-        // INICIO AL CARGAR LA PÁGINA
-        // =========================================================
         window.onload = function() {
             loadData(); 
             setFormattedDate();
