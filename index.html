@@ -35,7 +35,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             text-align: center;
             width: 100%;
-            max-width: 500px;
+            max-width: 550px; /* Aumentado para dar más espacio en PC */
             box-sizing: border-box;
         }
         .selector-options {
@@ -56,6 +56,7 @@
             color: white;
             background-color: #0056b3;
             flex: 1 1 200px;
+            white-space: nowrap; /* Evita que el texto salte a la siguiente línea */
         }
         .opt-btn:hover { transform: scale(1.05); }
         .btn-load { background-color: #17a2b8; }
@@ -98,7 +99,7 @@
         .btn-save:hover { background-color: #218838; }
         .btn-home { background-color: #6c757d; }
         .btn-danger { background-color: #dc3545; padding: 5px 10px; }
-        .btn-print { background-color: #17a2b8; } /* Color para el botón imprimir */
+        .btn-print { background-color: #17a2b8; } 
         .btn-print:hover { background-color: #138496; }
 
         .logo {
@@ -601,13 +602,11 @@
         // FUNCIÓN MEJORADA: DESCARGA LIGERA PARA MÓVILES
         // =========================================================
         function descargarPDF() {
-            // Ponemos el modo PDF para ocultar los botones de la "foto"
             document.body.classList.add('pdf-mode');
             const elementoParaPDF = document.getElementById('main-app');
             const numeroDoc = document.getElementById('docNumber').value.replace('/', '-');
             const nombreArchivo = numeroDoc + '.pdf';
 
-            // Resolución mínima (scale: 1) para que AppCreator24 no agote la memoria y cierre la app
             const opcionesPDF = {
                 margin:       0.5,
                 filename:     nombreArchivo,
@@ -616,7 +615,6 @@
                 jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
 
-            // Ejecuta el guardado directo de la librería
             html2pdf().set(opcionesPDF).from(elementoParaPDF).save().then(function() {
                 document.body.classList.remove('pdf-mode');
             }).catch(function(error) {
