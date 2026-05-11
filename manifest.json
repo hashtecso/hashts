@@ -1,7 +1,7 @@
 {
   "name": "Hash Tec Solutions Facturación",
   "short_name": "HTS Facturas",
-  "start_url": "/https://hashtecso.github.io/hashts/",
+  "start_url": "https://hashtecso.github.io/hashts/",
   "display": "standalone",
   "background_color": "#f4f4f9",
   "theme_color": "#0056b3",
@@ -17,4 +17,4 @@
       "type": "image/png"
     }
   ]
-}
+}_
